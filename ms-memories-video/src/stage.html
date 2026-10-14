@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Ms. Memories</title>
+<style>
+@font-face{font-family:"Tajawal";font-weight:300;src:url("../assets/fonts/Tajawal-Light.ttf")}
+@font-face{font-family:"Tajawal";font-weight:500;src:url("../assets/fonts/Tajawal-Medium.ttf")}
+:root{
+  --blue:#2B4FDB; --blue-d:#1A2F9E; --navy:#060A1F; --sky1:#2F7BE0; --sky2:#8CC4FF;
+  --beige:#EBDDC6; --beige-l:#F6EEDF; --red:#D6322E; --ink:#1B2140; --mute:#7B83A1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#fff;font-family:"Tajawal",sans-serif}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;perspective:1800px}
+.layer{position:absolute;inset:0}
+.pearl{background:
+  radial-gradient(900px 700px at 8% 100%,rgba(235,221,198,.85),transparent 70%),
+  radial-gradient(1000px 800px at 100% 0%,rgba(150,175,255,.35),transparent 70%),
+  radial-gradient(700px 500px at 60% 110%,rgba(214,50,46,.07),transparent 70%),
+  linear-gradient(135deg,#f7f9ff,#eef1ff 50%,#fbf5ee)}
+.sky{background:linear-gradient(180deg,#2467d6 0%,#4d9bf0 45%,#a9d4ff 85%,#e8f3ff 100%)}
+.night{background:radial-gradient(1400px 700px at 50% 120%,#0d1a5e 0%,#060a1f 60%)}
+.grain{pointer-events:none;opacity:.07;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>")}
+.t{position:absolute;white-space:nowrap;direction:rtl}
+.big{font-weight:500;color:var(--blue);font-size:230px;line-height:1.05;-webkit-text-stroke:3px var(--blue);letter-spacing:0}
+.small{font-weight:300;color:var(--mute);font-size:62px}
+.pol{position:absolute;background:#fff;padding:14px 14px 56px;border-radius:10px;
+  box-shadow:0 30px 60px -18px rgba(30,45,110,.38),0 6px 16px rgba(30,45,110,.14)}
+.pol svg{display:block;width:100%;height:100%;border-radius:4px}
+.pol .cap{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-weight:300;font-size:22px;color:#8a8fa8;direction:ltr}
+.phone{position:absolute;background:#0f1330;border-radius:76px;padding:22px;
+  box-shadow:0 70px 120px -30px rgba(15,25,90,.55),inset 0 0 0 3px #272d5c}
+.phone .scr{width:100%;height:100%;border-radius:56px;background:#fff;overflow:hidden;position:relative}
+.cell{position:absolute;border-radius:10px;overflow:hidden}
+.cell svg{width:100%;height:100%;display:block}
+.pill{position:absolute;border-radius:999px;font-weight:500;white-space:nowrap}
+.glass{position:absolute;border-radius:36px;background:rgba(255,255,255,.62);backdrop-filter:blur(26px);
+  box-shadow:0 40px 90px -30px rgba(25,40,120,.35),inset 0 0 0 2px rgba(255,255,255,.8)}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+// ---------- helpers (deterministic: everything is a pure function of t) ----------
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const P=(t,a,b)=>clamp((t-a)/(b-a));
+const E={out:x=>1-Math.pow(1-x,3),expo:x=>x>=1?1:1-Math.pow(2,-10*x),io:x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,
+  back:x=>{const c=1.70158,d=c+1;return 1+d*Math.pow(x-1,3)+c*Math.pow(x-1,2)}};
+const lerp=(a,b,x)=>a+(b-a)*x;
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+const $=(h)=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
+
+// ---------- illustrated "photos" (SVG, drawn in code) ----------
+function art(kind){
+  const W=300,H=300,A={
+  sunset:`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a6b"/><stop offset=".7" stop-color="#ff5f8d"/><stop offset="1" stop-color="#7b4fd0"/></linearGradient></defs><rect width="300" height="300" fill="url(#g)"/><circle cx="150" cy="170" r="62" fill="#ffe29a"/><rect y="190" width="300" height="110" fill="#4a3a9c"/><rect y="205" width="300" height="5" fill="#ffb27a" opacity=".6"/><rect x="40" y="228" width="220" height="4" fill="#ffb27a" opacity=".4"/>`,
+  mountain:`<rect width="300" height="300" fill="#a9d4ff"/><circle cx="235" cy="70" r="30" fill="#fff6d6"/><polygon points="0,300 90,110 180,300" fill="#3f5fb3"/><polygon points="90,300 200,80 300,300" fill="#2a4590"/><polygon points="200,80 176,124 200,112 222,126" fill="#fff"/><polygon points="90,110 72,146 90,138 108,150" fill="#fff"/><rect y="250" width="300" height="50" fill="#2d6e4e"/>`,
+  beach:`<rect width="300" height="300" fill="#bfe3ff"/><circle cx="60" cy="60" r="28" fill="#fff2b3"/><rect y="150" width="300" height="80" fill="#3fb0c9"/><rect y="215" width="300" height="85" fill="#ebdcc2"/><line x1="210" y1="170" x2="210" y2="262" stroke="#7a5a3a" stroke-width="5"/><path d="M160 178 Q210 120 262 178Z" fill="#d6322e"/><path d="M185 178 Q210 134 236 178Z" fill="#fff"/>`,
+  city:`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2f78"/><stop offset="1" stop-color="#f09a8a"/></linearGradient></defs><rect width="300" height="300" fill="url(#g)"/><rect x="20" y="130" width="50" height="170" fill="#1a1c4a"/><rect x="80" y="90" width="60" height="210" fill="#232766"/><rect x="150" y="150" width="45" height="150" fill="#1a1c4a"/><rect x="205" y="110" width="75" height="190" fill="#232766"/><g fill="#ffd978"><rect x="92" y="110" width="8" height="10"/><rect x="112" y="130" width="8" height="10"/><rect x="92" y="160" width="8" height="10"/><rect x="225" y="140" width="8" height="10"/><rect x="250" y="170" width="8" height="10"/><rect x="225" y="200" width="8" height="10"/><rect x="35" y="170" width="8" height="10"/></g>`,
+  balloons:`<rect width="300" height="300" fill="#cfe6ff"/><g stroke="#8a8fa8" stroke-width="2"><line x1="90" y1="140" x2="140" y2="290"/><line x1="160" y1="110" x2="150" y2="290"/><line x1="225" y1="150" x2="160" y2="290"/></g><ellipse cx="90" cy="105" rx="34" ry="42" fill="#d6322e"/><ellipse cx="160" cy="80" rx="38" ry="46" fill="#ebdcc2"/><ellipse cx="225" cy="115" rx="32" ry="40" fill="#2b4fdb"/>`,
+  cake:`<rect width="300" height="300" fill="#f6eedf"/><rect x="70" y="170" width="160" height="80" rx="10" fill="#ebdcc2"/><rect x="70" y="170" width="160" height="26" rx="12" fill="#fff"/><rect x="95" y="130" width="110" height="46" rx="8" fill="#d6322e"/><g fill="#2b4fdb"><rect x="120" y="102" width="8" height="30"/><rect x="146" y="102" width="8" height="30"/><rect x="172" y="102" width="8" height="30"/></g><g fill="#ffb02e"><ellipse cx="124" cy="94" rx="6" ry="11"/><ellipse cx="150" cy="94" rx="6" ry="11"/><ellipse cx="176" cy="94" rx="6" ry="11"/></g>`,
+  garden:`<rect width="300" height="300" fill="#dff1e1"/><rect y="200" width="300" height="100" fill="#4f9d6a"/><g><circle cx="70" cy="190" r="22" fill="#d6322e"/><circle cx="130" cy="170" r="26" fill="#ebdcc2"/><circle cx="200" cy="195" r="24" fill="#2b4fdb"/><circle cx="250" cy="165" r="20" fill="#ff8aa8"/></g><g stroke="#2d6e4e" stroke-width="5"><line x1="70" y1="212" x2="70" y2="270"/><line x1="130" y1="196" x2="130" y2="270"/><line x1="200" y1="219" x2="200" y2="270"/><line x1="250" y1="185" x2="250" y2="270"/></g>`,
+  night:`<rect width="300" height="300" fill="#0a1040"/><g fill="#fff"><circle cx="40" cy="50" r="2"/><circle cx="110" cy="30" r="2.5"/><circle cx="200" cy="70" r="2"/><circle cx="260" cy="40" r="3"/><circle cx="80" cy="110" r="2"/><circle cx="230" cy="130" r="2"/></g><circle cx="200" cy="100" r="36" fill="#fff6d6"/><circle cx="214" cy="92" r="32" fill="#0a1040"/><polygon points="0,300 60,200 120,300" fill="#1b2a7a"/><polygon points="80,300 180,180 300,300" fill="#142066"/>`};
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${A[kind]}</svg>`;
+}
+const KINDS=['sunset','mountain','beach','city','balloons','cake','garden','night'];
+
+function polaroid(kind,x,y,w,rot,cap){
+  const el=$(`<div class="pol" style="width:${w}px;height:${w*1.18}px"><div style="width:100%;height:calc(100% - 42px)">${art(kind)}</div>${cap?`<div class="cap">${cap}</div>`:''}</div>`);
+  el.style.left=x+'px';el.style.top=y+'px';el.style.transform=`rotate(${rot}deg)`;return el;
+}
+
+// ---------- soft 3D-ish clouds (portrait canvas 1080x1920) ----------
+function clouds(seed,n,y0,y1){
+  const r=rng(seed);let s='';
+  for(let i=0;i<n;i++){
+    const cx=r()*1500-210,cy=y0+r()*(y1-y0),sc=.6+r()*.9;
+    for(let k=0;k<9;k++){
+      const dx=(k-4)*46*sc+(r()-.5)*30,dy=-Math.abs(Math.sin(k*1.1))*50*sc+(r()-.5)*14,rr=(70+r()*50)*sc;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${rr}" fill="url(#cg)"/>`;
+    }
+  }
+  return `<svg class="layer" style="left:-300px;width:1680px" viewBox="-300 0 1680 1920" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="cg" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#f1f7ff"/><stop offset="1" stop-color="#bcd7f7"/></radialGradient><filter id="cb" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter></defs><g filter="url(#cb)">${s}</g></svg>`;
+}
+
+// ---------- scenes ----------
+const stage=document.getElementById('stage');
+const scenes={};
+
+// S1: opening swap-word on pearl  (VO 0.0–2.3)
+scenes.open=(t)=>{
+  stage.innerHTML='';
+  stage.append($('<div class="layer pearl"></div>'));
+  const a=E.out(P(t,0.1,0.9)), b=E.out(P(t,0.5,1.4));
+  const drift=t*14;
+  const p1=polaroid('sunset',640-drift,170,360,8,'2019');p1.style.opacity=.5;p1.style.filter='blur(5px)';
+  const p2=polaroid('beach',-70+drift,1290,400,-9,'2021');p2.style.opacity=.55;p2.style.filter='blur(5px)';
+  stage.append(p1,p2);
+  const small=$('<div class="t small" style="right:0;left:0;top:640px;text-align:center">كل يوم نعيش</div>');
+  small.style.opacity=a;small.style.transform=`translateY(${(1-a)*24}px)`;small.style.filter=`blur(${(1-a)*10}px)`;
+  const big=$('<div class="t big" style="right:0;left:0;top:740px;text-align:center">لحظات<br>جديدة</div>');
+  big.style.opacity=b;big.style.transform=`translateY(${(1-b)*40}px)`;big.style.filter=`blur(${(1-b)*18}px)`;
+  stage.append(small,big,$('<div class="layer grain"></div>'));
+};
+
+// S2: gallery phone on sky (VO 2.6–4.6)
+scenes.gallery=(t)=>{
+  stage.innerHTML='';
+  stage.append($('<div class="layer sky"></div>'));
+  const cl=$('<div></div>');cl.innerHTML=clouds(7,9,1450,1960);const cs=cl.firstChild;cs.style.transform=`translateX(${-t*10}px)`;stage.append(cs);
+  const k=E.out(P(t,2.6,3.5));
+  const ph=$(`<div class="phone" style="width:600px;height:1000px;left:240px;top:720px"><div class="scr"></div></div>`);
+  ph.style.transform=`rotateY(${lerp(-40,-14,k)}deg) rotateX(${lerp(14,5,k)}deg) translateY(${(1-k)*140}px)`;ph.style.opacity=k;
+  const scr=ph.firstChild;const cols=3,cw=(556-4*(cols+1))/cols;
+  for(let i=0;i<cols*7;i++){
+    const c=$(`<div class="cell">${art(KINDS[i%8])}</div>`);
+    const col=i%cols,row=Math.floor(i/cols);
+    const fall=E.out(P(t,2.7+i*0.035,3.3+i*0.035));
+    c.style.cssText+=`;left:${4+col*(cw+4)}px;top:${4+row*(cw+4)-(1-fall)*900}px;width:${cw}px;height:${cw}px;opacity:${fall}`;
+    scr.append(c);
+  }
+  stage.append(ph);
+  const n=Math.round(lerp(128,9874,E.io(P(t,2.7,4.5))));
+  const pill=$(`<div class="pill" style="left:290px;top:1560px;padding:18px 44px;background:#fff;color:#D6322E;font-size:54px;box-shadow:0 20px 50px -14px rgba(20,40,120,.4)">${n.toLocaleString('en-US')} صورة</div>`);
+  pill.style.opacity=E.out(P(t,2.8,3.4));
+  const txt=$('<div class="t" style="left:0;right:0;top:230px;text-align:center;font-weight:500;font-size:190px;color:#fff;text-shadow:0 8px 40px rgba(15,40,140,.45);-webkit-text-stroke:2px #fff;line-height:1.05">صورًا<br>كثيرة</div>');
+  const m=E.out(P(t,3.0,3.9));txt.style.opacity=m;txt.style.transform=`translateY(${(1-m)*-50}px)`;txt.style.filter=`blur(${(1-m)*14}px)`;
+  stage.append(txt,pill,$('<div class="layer grain"></div>'));
+};
+
+// S8: night + glowing arc  (VO 17.8–22.6)
+scenes.night=(t)=>{
+  stage.innerHTML='';
+  stage.append($('<div class="layer night"></div>'));
+  const r=rng(5);let st='';for(let i=0;i<70;i++){st+=`<circle cx="${r()*1080}" cy="${r()*1300}" r="${.6+r()*1.6}" fill="#fff" opacity="${.25+r()*.6}"/>`}
+  stage.append($(`<svg class="layer" viewBox="0 0 1080 1920">${st}</svg>`));
+  const g=E.out(P(t,17.9,19.2));
+  stage.append($(`<div style="position:absolute;left:-760px;right:-760px;top:${lerp(2200,1450,g)}px;height:2600px;border-radius:50%;
+    border:5px solid #3d6bff;box-shadow:0 0 70px 8px rgba(61,107,255,.75),inset 0 0 160px 20px rgba(61,107,255,.35);background:radial-gradient(circle at 50% 0%,rgba(40,70,200,.35),transparent 60%)"></div>`));
+  const a=E.out(P(t,18.0,18.9));
+  const small=$('<div class="t" style="right:0;left:0;top:540px;text-align:center;font-weight:300;font-size:60px;color:#c9d3ff">غريبة كيف تمرّ السنوات…</div>');
+  small.style.opacity=a;small.style.filter=`blur(${(1-a)*10}px)`;
+  const b=E.out(P(t,20.0,20.9));
+  const hl=$('<div class="t" style="right:0;left:0;top:680px;text-align:center;font-weight:500;font-size:230px;color:#fff;-webkit-text-stroke:2px #fff;line-height:1.25"><span style="background:#2B4FDB;padding:0 34px;border-radius:16px">كأنها</span><br><span>أمس.</span></div>');
+  hl.style.opacity=b;hl.style.transform=`translateY(${(1-b)*50}px) scale(${lerp(.96,1,b)})`;hl.style.filter=`blur(${(1-b)*16}px)`;
+  stage.append(small,hl);
+};
+
+// S13: end card (VO 39.3→end)
+scenes.end=(t)=>{
+  stage.innerHTML='';
+  stage.append($('<div class="layer pearl"></div>'));
+  const a=E.out(P(t,39.3,40.4));
+  const logo=$('<img src="../assets/images/logo_black.png" style="position:absolute;left:30px;top:420px;width:1020px;mix-blend-mode:multiply">');
+  logo.style.opacity=a;logo.style.filter=`blur(${(1-a)*14}px)`;logo.style.transform=`scale(${lerp(.92,1,a)})`;
+  const line=$('<div style="position:absolute;left:340px;top:1010px;height:4px;background:#D6322E;border-radius:4px"></div>');line.style.width=lerp(0,400,E.expo(P(t,40.4,41.4)))+'px';
+  const c=E.out(P(t,40.7,41.6));
+  const tag=$('<div class="t" style="left:0;right:0;top:1050px;text-align:center;direction:ltr;font-weight:300;font-size:42px;letter-spacing:.34em;color:#5a6285">EVERY MEMORY MATTERS</div>');
+  tag.style.opacity=c;tag.style.filter=`blur(${(1-c)*10}px)`;
+  const d=E.out(P(t,42.3,43.3));
+  const card=$(`<div class="glass" style="left:150px;top:1210px;width:780px;height:150px;display:flex;align-items:center;justify-content:center;gap:26px;direction:ltr">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D6322E" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1.1" fill="#D6322E"/></svg>
+    <div style="font-weight:500;font-size:62px;color:#2B4FDB">@msmemo.om</div></div>`);
+  card.style.opacity=d;card.style.transform=`translateY(${(1-d)*50}px)`;card.style.filter=`blur(${(1-d)*10}px)`;
+  stage.append(logo,line,tag,card,$('<div class="layer grain"></div>'));
+};
+
+// timeline entry (full video is wired up after style approval)
+function renderAt(t){
+  const pick=window.__scene||'open';
+  scenes[pick](t);
+}
+window.renderAt=renderAt;
+</script>
+</body>
+</html>
