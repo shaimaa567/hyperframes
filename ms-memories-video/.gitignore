@@ -1,3 +1,7 @@
 assets/vo/*.mp3
 renders/previews/*.png
 renders/final/
+node_modules/
+cache/
+.env
+*.env

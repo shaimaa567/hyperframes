@@ -1,6 +1,6 @@
 # PROGRESS – Ms. Memories (updated 2026-10-13)
 
-Phase: style board v2 (vertical) awaiting approval. Git commit NOT done: user interrupted the commit; pre-commit hook needs repo deps (bun install done; bun.lock got modified - restore with git checkout bun.lock).
+Phase: v1 rendered (renders/final/ms_memories_v1.mp4, local only). Awaiting user feedback.
 Format: VERTICAL 9:16 1080x1920 @30fps (user request). Final ≈ 44.5 s (VO 42.45 s + ~2 s hold). Keep key content inside y 220–1500 (platform UI safe zone).
 Done: reference analysed (53.9 s, 1024x576); VO intake (assets/vo/vo_v1.mp3, 42.45 s, mono 44.1k, mean -24.8 dB -> loudnorm later); engine src/stage.html + scripts/still.mjs; 4 style stills -> renders/previews/styleboard.jpg
 Next step: user approves styleboard -> build all 13 scenes + master timeline + render CLI (src/render.js) + SFX/music + final mix.

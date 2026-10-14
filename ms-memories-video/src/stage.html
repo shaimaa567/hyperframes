@@ -86,7 +86,7 @@ function clouds(seed,n,y0,y1){
 }
 
 // ---------- scenes ----------
-const stage=document.getElementById('stage');
+let stage=document.getElementById('stage');const root=stage;
 const scenes={};
 
 // S1: opening swap-word on pearl  (VO 0.0–2.3)
@@ -145,7 +145,9 @@ scenes.night=(t)=>{
   const b=E.out(P(t,20.0,20.9));
   const hl=$('<div class="t" style="right:0;left:0;top:680px;text-align:center;font-weight:500;font-size:230px;color:#fff;-webkit-text-stroke:2px #fff;line-height:1.25"><span style="background:#2B4FDB;padding:0 34px;border-radius:16px">كأنها</span><br><span>أمس.</span></div>');
   hl.style.opacity=b;hl.style.transform=`translateY(${(1-b)*50}px) scale(${lerp(.96,1,b)})`;hl.style.filter=`blur(${(1-b)*16}px)`;
-  stage.append(small,hl);
+  const pr=E.out(P(t,21.3,22.3)),gg=1-E.io(P(t,21.8,22.6));
+  const pc=polaroid('sunset',360,lerp(1850,1330,pr),360,-4,'');pc.style.filter=`grayscale(${gg}) sepia(${gg*.4})`;pc.style.opacity=pr;
+  stage.append(small,hl,pc);
 };
 
 // S13: end card (VO 39.3→end)
@@ -167,12 +169,7 @@ scenes.end=(t)=>{
   stage.append(logo,line,tag,card,$('<div class="layer grain"></div>'));
 };
 
-// timeline entry (full video is wired up after style approval)
-function renderAt(t){
-  const pick=window.__scene||'open';
-  scenes[pick](t);
-}
-window.renderAt=renderAt;
 </script>
+<script src="scenes2.js"></script>
 </body>
 </html>
